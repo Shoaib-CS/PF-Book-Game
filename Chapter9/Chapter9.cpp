@@ -1,7 +1,8 @@
 #include <iostream>
-#include<conio.h>
+#include <conio.h>
 #include <fstream>
 #include <windows.h>
+
 using namespace std;
 
 // Function declarations
@@ -9,17 +10,16 @@ void gotoxy(int x, int y);
 void erasePlayer();
 void printPlayer();
 void drawBoard();
-bool LoadMaze(const string &filename);
+bool LoadMaze(string path);
 bool LoadAircraftFromFile();
 bool LoadEnemyFromFile();
-bool LoadDefaultRecordsFromFile();
+bool LoadRecordsFromFile(string path);
 void movePlayerLeft();
 void movePlayerRight();
 void drawRecords();
 void createBullet();
 void eraseBullet(int count);
 void moveBullet();
-void moveBulletSteps(int currentBullet, int steps);
 void printEnemy();
 void eraseEnemy();
 void moveEnemy();
@@ -28,11 +28,14 @@ void moveEnemyRight();
 void removeBullet(int index);
 bool isBulletWallCollision(int bulletX, int bulletY);
 bool isBulletEnemyCollision(int bulletX, int bulletY);
+bool checkGameStatus();
+bool saveMazeToFile(string path);
+bool saveRecordsToFile(string path);
+void saveGameState();
+void handleGameOver();
 
 const int boardHeight = 35, boardWidth = 105;
-
 char board[boardHeight][boardWidth];
-
 int playerX;
 int playerY;
 int playerHealth;
@@ -51,16 +54,34 @@ char enemy[enemyHeight][enemyWidth] = {};
 int bulletX[200];
 int bulletY[200];
 int bulletCount = 0;
-
-int timeStamp = 0; // Add timeStamp variable
-
-bool isGameOver=false;
+int timeStamp = 0;
 
 int main()
 {
+    bool isGameOver = false;
+    string mazePath;
+    string recordsPath;
+
     system("cls");
-    if (LoadMaze("defaultMaze.txt") && LoadAircraftFromFile() && LoadEnemyFromFile() && LoadDefaultRecordsFromFile())
+
+    // Ask user whether to load default or saved files
+    cout << "Do you want to load default or saved files? (D/S): ";
+    char choice = getch();
+
+    if (choice == 'S' || choice == 's')
     {
+        mazePath = "savedMaze.txt";
+        recordsPath = "savedRecords.txt";
+    }
+    else
+    {
+        mazePath = "defaultMaze.txt";
+        recordsPath = "defaultRecords.txt";
+    }
+
+    if (LoadMaze(mazePath) && LoadRecordsFromFile(recordsPath)&& LoadAircraftFromFile() && LoadEnemyFromFile())
+    {
+        system("cls");
         drawBoard();
         printPlayer();
         printEnemy();
@@ -75,58 +96,65 @@ int main()
             {
                 movePlayerRight();
             }
-            if (GetAsyncKeyState(VK_SPACE) && timeStamp >= 3) // Check if enough time has passed
+            if (GetAsyncKeyState(VK_SPACE) && timeStamp >= 3)
             {
                 createBullet();
-                timeStamp = 0; // Reset timeStamp
+                timeStamp = 0;
+            }
+            if (GetAsyncKeyState(VK_ESCAPE))
+            {
+                saveGameState();
+
+                system("cls");
+                gotoxy(20, 10);
+                cout << "GAME Save!";
+                gotoxy(20, 11);
+                cout << "Press any key to exit";
+                getch();
+                return 0;
             }
 
-            if(isGameOver)
+            isGameOver = checkGameStatus();
+            if (isGameOver)
             {
+                handleGameOver();
                 break;
             }
             moveEnemy();
             moveBullet();
             drawRecords();
             Sleep(70);
-            timeStamp++; // Increment timeStamp
-            
+            timeStamp++;
         }
     }
     else
     {
-        cout << "Failed to load maze file." << endl;
+        cout << "Failed to load files." << endl;
     }
 
-    system("cls");
-    gotoxy(20,10);
-    cout<<"GAME OVER! YOU WON!!";
-    gotoxy(20,11);
-    cout<<"Press any key to exit";
-    getch();
     return 0;
 }
 
 void movePlayerLeft()
 {
-    if (board[playerY][playerX - 1] == ' ')
+    if (playerX > 0 && board[playerY][playerX - 1] == ' ')
     {
         erasePlayer();
         board[playerY][playerX] = ' ';
         playerX = playerX - 1;
-        board[playerY][playerX] = 'p';
+        board[playerY][playerX] = 'P';
         printPlayer();
     }
 }
 
 void movePlayerRight()
 {
-    if ((board[playerY][playerX + playerWidth] == ' '))
+    if (playerX + playerWidth < boardWidth && board[playerY][playerX + playerWidth] == ' ')
     {
         erasePlayer();
         board[playerY][playerX] = ' ';
         playerX = playerX + 1;
-        board[playerY][playerX] = 'p';
+        board[playerY][playerX] = 'P';
         printPlayer();
     }
 }
@@ -145,7 +173,7 @@ void moveEnemy()
 
 void moveEnemyLeft()
 {
-    if (board[enemyY][enemyX - 1] != '#')
+    if (enemyX > 0 && board[enemyY][enemyX - 1] != '#')
     {
         eraseEnemy();
         board[enemyY][enemyX] = ' ';
@@ -161,7 +189,7 @@ void moveEnemyLeft()
 
 void moveEnemyRight()
 {
-    if ((board[enemyY][enemyX + enemyWidth + 1] != '#'))
+    if (enemyX + enemyWidth < boardWidth && board[enemyY][enemyX + enemyWidth + 1] != '#')
     {
         eraseEnemy();
         board[enemyY][enemyX] = ' ';
@@ -175,10 +203,9 @@ void moveEnemyRight()
     }
 }
 
-bool LoadMaze(const string &filename)
+bool LoadMaze(string path)
 {
-    const string path = "defaultMaze.txt";
-    fstream mazeFile(path, ios::in); // Open the file in read mode
+    fstream mazeFile(path, ios::in);
 
     if (mazeFile.is_open())
     {
@@ -194,7 +221,6 @@ bool LoadMaze(const string &filename)
                     playerX = j;
                     playerY = i;
                 }
-
                 if (board[i][j] == 'E')
                 {
                     enemyX = j;
@@ -208,7 +234,6 @@ bool LoadMaze(const string &filename)
     }
     else
     {
-        mazeFile.close();
         return false;
     }
 }
@@ -229,12 +254,14 @@ void drawBoard()
 void drawRecords()
 {
     gotoxy(5, 37);
-    cout << "Player Health: " << playerHealth;
+    cout << "Player Health: " << playerHealth << "   ";
     gotoxy(5, 38);
-    cout << "Enemy Health: " << enemyHealth;
+    cout << "Enemy Health: " << enemyHealth << "   ";
     gotoxy(5, 39);
-    cout << "************";
+    cout << "Press esc to save file and exit!";
 
+    gotoxy(5, 40);
+    cout << "************";
 }
 
 void gotoxy(int x, int y)
@@ -265,67 +292,6 @@ void printPlayer()
         {
             gotoxy(playerX + j, playerY + i);
             cout << aircraft[i][j];
-        }
-    }
-}
-
-void createBullet()
-{
-    if (bulletCount < 200)  // Ensure we don't exceed the array bounds
-    {
-        char bullet = 207;
-
-        bulletX[bulletCount] = playerY - 1;
-        bulletY[bulletCount] = playerX + 6;
-
-        board[bulletX[bulletCount]][bulletY[bulletCount]] = bullet;
-
-        gotoxy(bulletY[bulletCount], bulletX[bulletCount]);
-        cout << bullet;
-
-        bulletCount++;
-    }
-}
-
-void eraseBullet(int count)
-{
-    gotoxy(bulletY[count], bulletX[count]);
-    cout << ' ';
-    board[bulletX[count]][bulletY[count]] = ' ';
-}
-
-void moveBullet()
-{
-    char bullet = 207;
-    for (int i = 0; i < bulletCount; i++)
-    {
-        eraseBullet(i);
-        bulletX[i]--;
-
-        if (bulletX[i] < 0 || isBulletWallCollision(bulletX[i], bulletY[i]))
-        {
-            // Remove bullet if it hits a wall or goes out of bounds
-            removeBullet(i);
-            i--; // Adjust index to check the next bullet
-        }
-        else if (isBulletEnemyCollision(bulletX[i], bulletY[i]))
-        {
-            // Handle collision with enemy
-            removeBullet(i);
-            i--; // Adjust index to check the next bullet
-            enemyHealth--; // Decrease enemy health
-            if (enemyHealth <= 0)
-            {
-                isGameOver=true;
-                return;
-
-            }
-        }
-        else
-        {
-            board[bulletX[i]][bulletY[i]] = bullet;
-            gotoxy(bulletY[i], bulletX[i]);
-            cout << bullet;
         }
     }
 }
@@ -379,14 +345,12 @@ bool LoadAircraftFromFile()
     }
 }
 
-bool LoadDefaultRecordsFromFile()
+bool LoadRecordsFromFile(string path)
 {
-    string path = "defaultRecords.txt";
     fstream file(path, ios::in);
     if (file.is_open())
     {
         string line;
-        int i = 0;
         getline(file, line);
         playerHealth = stoi(line);
 
@@ -427,6 +391,50 @@ bool LoadEnemyFromFile()
     }
 }
 
+void createBullet()
+{
+    char bullet = 207;
+
+    bulletX[bulletCount] = playerY - 1;
+    bulletY[bulletCount] = playerX + 6;
+
+    board[bulletX[bulletCount]][bulletY[bulletCount]] = bullet;
+
+    gotoxy(bulletY[bulletCount], bulletX[bulletCount]);
+    cout << bullet;
+
+    bulletCount++;
+}
+
+void moveBullet()
+{
+    char bullet = 207;
+    for (int i = 0; i < bulletCount; i++)
+    {
+        eraseBullet(i);
+        bulletX[i]--;
+
+        if (bulletX[i] < 0 || isBulletWallCollision(bulletX[i], bulletY[i]))
+        {
+            removeBullet(i);
+            i--; // Adjust index to check the next bullet
+        }
+        else if (isBulletEnemyCollision(bulletX[i], bulletY[i]))
+        {
+            // Handle collision with enemy
+            removeBullet(i);
+            i--;           // Adjust index to check the next bullet
+            enemyHealth--; // Decrease enemy health
+        }
+        else
+        {
+            board[bulletX[i]][bulletY[i]] = bullet;
+            gotoxy(bulletY[i], bulletX[i]);
+            cout << bullet;
+        }
+    }
+}
+
 void removeBullet(int index)
 {
     for (int i = index; i < bulletCount - 1; i++)
@@ -435,6 +443,13 @@ void removeBullet(int index)
         bulletY[i] = bulletY[i + 1];
     }
     bulletCount--;
+}
+
+void eraseBullet(int count)
+{
+    gotoxy(bulletY[count], bulletX[count]);
+    cout << ' ';
+    board[bulletX[count]][bulletY[count]] = ' ';
 }
 
 bool isBulletWallCollision(int bulletX, int bulletY)
@@ -455,4 +470,80 @@ bool isBulletEnemyCollision(int bulletX, int bulletY)
         }
     }
     return false;
+}
+
+bool checkGameStatus()
+{
+    if (enemyHealth <= 0)
+    {
+        return true;
+    }
+    return false;
+}
+bool saveMazeToFile(string path)
+{
+    fstream mazeFile(path, ios::out);
+    if (mazeFile.is_open())
+    {
+        for (int i = 0; i < boardHeight; i++)
+        {
+            for (int j = 0; j < boardWidth; j++)
+            {
+                mazeFile << board[i][j];
+            }
+            // Only add a newline if it's not the last line
+            if (i < boardHeight - 1)
+            {
+                mazeFile << endl;
+            }
+        }
+        mazeFile.close();
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+
+bool saveRecordsToFile(string path)
+{
+    fstream recordsFile(path, ios::out);
+    if (recordsFile.is_open())
+    {
+        recordsFile << playerHealth << endl;
+        recordsFile << enemyHealth;
+        recordsFile.close();
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+
+
+void saveGameState()
+{
+    bool mazeSaved = saveMazeToFile("savedMaze.txt");
+    bool recordsSaved = saveRecordsToFile("savedRecords.txt");
+
+    if (mazeSaved && recordsSaved)
+    {
+        cout << "Game state saved successfully." << endl;
+    }
+    else
+    {
+        cout << "Failed to save game state. Files not found or error occurred." << endl;
+    }
+}
+
+void handleGameOver()
+{
+    system("cls");
+    gotoxy(20, 10);
+    cout << "GAME OVER! YOU WON!!";
+    gotoxy(20, 11);
+    cout << "Press any key to exit";
+    getch();
 }
