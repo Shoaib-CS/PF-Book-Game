@@ -30,21 +30,21 @@ const int aircraftWidth = 15;
 const int aircraftHeight = 5;
 
 // Aircraft rows defined as parallel arrays
-char aircraftRow1[aircraftWidth] = "      /\\     ";
-char aircraftRow2[aircraftWidth] = "   __/~~\\__  ";
-char aircraftRow3[aircraftWidth] = " /   |  |   \\";
-char aircraftRow4[aircraftWidth] = "=====.  .=====";
-char aircraftRow5[aircraftWidth] = "     ||||     ";
+char aircraftRow1[aircraftWidth];
+char aircraftRow2[aircraftWidth];
+char aircraftRow3[aircraftWidth];
+char aircraftRow4[aircraftWidth];
+char aircraftRow5[aircraftWidth];
 
 // Enemy rows defined as parallel arrays
 const int enemyWidth = 15;
 const int enemyHeight = 5;
 
-char enemyRow1[enemyWidth] = "   _---.--_   ";
-char enemyRow2[enemyWidth] = "  /__/~~\\__\\";
-char enemyRow3[enemyWidth] = " |   |\"\"|   |";
-char enemyRow4[enemyWidth] = "|====.  .====|";
-char enemyRow5[enemyWidth] = "\\____________/";
+char enemyRow1[enemyWidth];
+char enemyRow2[enemyWidth];
+char enemyRow3[enemyWidth];
+char enemyRow4[enemyWidth];
+char enemyRow5[enemyWidth];
 
 void drawRecords();
 
@@ -90,7 +90,7 @@ int main()
 
     if (LoadRecordsFromFile(recordsPath)&& LoadAircraftFromFile() && LoadEnemyFromFile())
     {
-        system("Color 04");
+        system("Color 03");
         system("CLS");
         printMaze();
         printAirCraft();
@@ -352,6 +352,8 @@ void drawRecords()
     gotoxy(5, 38);
     cout << "Enemy Health: " << enemyHealth << "   "; // Add spaces to clear previous value
     gotoxy(5, 39);
+    cout << "Press esc to save file and exit!";
+    gotoxy(5, 40);
     cout << "************";
 }
 

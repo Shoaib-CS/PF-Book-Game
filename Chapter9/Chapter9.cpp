@@ -79,9 +79,11 @@ int main()
         recordsPath = "defaultRecords.txt";
     }
 
-    if (LoadMaze(mazePath) && LoadRecordsFromFile(recordsPath)&& LoadAircraftFromFile() && LoadEnemyFromFile())
+    if (LoadMaze(mazePath) && LoadRecordsFromFile(recordsPath) && LoadAircraftFromFile() && LoadEnemyFromFile())
     {
         system("cls");
+        system("Color 03");
+
         drawBoard();
         printPlayer();
         printEnemy();
@@ -521,7 +523,6 @@ bool saveRecordsToFile(string path)
         return false;
     }
 }
-
 
 void saveGameState()
 {
