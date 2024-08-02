@@ -12,13 +12,13 @@ int y = 23;
 
 int main()
 {
-    system("Color 04");
     system("CLS");
     printMaze();
     printAirCraft();
 
     while (true)
     {
+
         if (GetAsyncKeyState(VK_LEFT))
         {
             if (getCharAtxy(x - 1, y) == ' ')
@@ -39,6 +39,7 @@ int main()
         }
         Sleep(80);
     }
+
 }
 
 void printMaze()

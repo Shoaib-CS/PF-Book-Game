@@ -63,7 +63,6 @@ int timeStamp = 0; // Add timeStamp variable for bullet speed
 int main()
 {
     bool isGameOver = false;
-    system("Color 04");
     system("CLS");
     printMaze();
     printAircraft();
@@ -177,7 +176,7 @@ void printEnemy()
 {
     
     gotoxy(enemyX, enemyY);
-    cout << enemyRow1 << endl;
+    cout << enemyRow1 << endl; //Note that char array is actually a string, so we can print directly without loop on the array.
     gotoxy(enemyX, enemyY+1);
     cout << enemyRow2 << endl;
     gotoxy(enemyX, enemyY+2);
@@ -300,19 +299,17 @@ void moveBullet()
     for (int i = 0; i < bulletCount; i++)
     {
         eraseBullet(i);
-        bulletY[i]--;
+        bulletY[i] = bulletY[i]-1;
 
         if (bulletY[i] < 2 || isBulletWallCollision(bulletX[i], bulletY[i]))
         {
             // Remove bullet if it hits a wall or goes out of bounds
             removeBullet(i);
-            i--; // Adjust index to check the next bullet
         }
         else if (isBulletEnemyCollision(bulletX[i], bulletY[i]))
         {
             // Handle collision with enemy
             removeBullet(i);
-            i--;           // Adjust index to check the next bullet
             enemyHealth--; // Decrease enemy health
         }
         else
@@ -341,6 +338,15 @@ void eraseBullet(int count)
 bool isBulletWallCollision(int bulletX, int bulletY)
 {
     return getCharAtxy(bulletX, bulletY) == '#'; // if this is equal then true is returned, else false.
+
+    /*
+    //It can also be implemented as:
+    if(getCharAtxy(bulletX, bulletY) == '#')
+    {
+        return true;
+    }
+    return false; 
+    */
 }
 
 bool isBulletEnemyCollision(int bulletX, int bulletY)
@@ -360,7 +366,6 @@ bool isBulletEnemyCollision(int bulletX, int bulletY)
     }
     return false;
 }
-
 bool checkGameStatus()
 {
     if (enemyHealth <= 0) // if multiple enemies, it can be added here using && operator.

@@ -90,7 +90,6 @@ int main()
 
     if (LoadRecordsFromFile(recordsPath)&& LoadAircraftFromFile() && LoadEnemyFromFile())
     {
-        system("Color 03");
         system("CLS");
         printMaze();
         printAirCraft();
@@ -204,7 +203,7 @@ char getCharAtxy(short int x, short int y)
 
 void printAirCraft()
 {
-    
+
     gotoxy(playerX, playerY);
     cout << aircraftRow1 << endl;
     gotoxy(playerX, playerY+1);
@@ -376,19 +375,17 @@ void moveBullet()
     for (int i = 0; i < bulletCount; i++)
     {
         eraseBullet(i);
-        bulletY[i]--;
+        bulletY[i] = bulletY[i]-1;
 
         if (bulletY[i] < 2 || isBulletWallCollision(bulletX[i], bulletY[i]))
         {
             // Remove bullet if it hits a wall or goes out of bounds
             removeBullet(i);
-            i--; // Adjust index to check the next bullet
         }
         else if (isBulletEnemyCollision(bulletX[i], bulletY[i]))
         {
             // Handle collision with enemy
             removeBullet(i);
-            i--;           // Adjust index to check the next bullet
             enemyHealth--; // Decrease enemy health
         }
         else

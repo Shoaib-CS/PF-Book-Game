@@ -82,7 +82,6 @@ int main()
     if (LoadMaze(mazePath) && LoadRecordsFromFile(recordsPath) && LoadAircraftFromFile() && LoadEnemyFromFile())
     {
         system("cls");
-        system("Color 03");
 
         drawBoard();
         printPlayer();
@@ -207,6 +206,8 @@ void moveEnemyRight()
 
 bool LoadMaze(string path)
 {
+    char bullet = 207; // char of bullet
+
     fstream mazeFile(path, ios::in);
 
     if (mazeFile.is_open())
@@ -414,18 +415,16 @@ void moveBullet()
     for (int i = 0; i < bulletCount; i++)
     {
         eraseBullet(i);
-        bulletX[i]--;
+        bulletX[i] = bulletX[i] - 1;
 
         if (bulletX[i] < 0 || isBulletWallCollision(bulletX[i], bulletY[i]))
         {
             removeBullet(i);
-            i--; // Adjust index to check the next bullet
         }
         else if (isBulletEnemyCollision(bulletX[i], bulletY[i]))
         {
             // Handle collision with enemy
             removeBullet(i);
-            i--;           // Adjust index to check the next bullet
             enemyHealth--; // Decrease enemy health
         }
         else
@@ -484,6 +483,7 @@ bool checkGameStatus()
 }
 bool saveMazeToFile(string path)
 {
+    char bullet = 207; // char for bullet
     fstream mazeFile(path, ios::out);
     if (mazeFile.is_open())
     {
@@ -491,7 +491,14 @@ bool saveMazeToFile(string path)
         {
             for (int j = 0; j < boardWidth; j++)
             {
-                mazeFile << board[i][j];
+                if (board[i][j] == bullet)
+                {
+                    mazeFile << ' ';
+                }
+                else
+                {
+                    mazeFile << board[i][j];
+                }
             }
             // Only add a newline if it's not the last line
             if (i < boardHeight - 1)

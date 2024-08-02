@@ -11,8 +11,7 @@ void clearAirCraft();
     int y = 23;
 
 int main()
-{
-    system("Color 04");
+{ 
     system("CLS");
     printMaze();
 

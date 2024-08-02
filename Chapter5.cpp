@@ -24,7 +24,6 @@ int enemyY = 3;
 
 int main()
 {
-    system("Color 04");
     system("CLS");
     printMaze();
     printAirCraft();
